@@ -261,3 +261,5 @@ resource "aws_iam_policy" "aws-lb-controller" {
         }
     ]
 }
+EOF
+}
