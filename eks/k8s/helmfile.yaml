@@ -1,0 +1,145 @@
+repositories:
+  - name: traefik
+    url: https://helm.traefik.io/traefik
+  - name: jetstack
+    url: https://charts.jetstack.io
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+  - name: autoscaler
+    url: https://kubernetes.github.io/autoscaler
+  - name: kedacore
+    url: https://kedacore.github.io/charts
+
+releases:
+  - name: cluster-autoscaler
+    namespace: kube-system
+    chart: autoscaler/cluster-autoscaler
+    version: 9.29.4
+    values:
+      - cloudProvider: aws
+        awsRegion: {{ requiredEnv "AWS_REGION" }}
+        autoDiscovery:
+          clusterName: {{ requiredEnv "CLUSTER_NAME" }}
+        rbac:
+          create: true
+          serviceAccount:
+            create: true
+            name: cluster-autoscaler
+            annotations:
+              eks.amazonaws.com/role-arn: arn:aws:iam::{{ requiredEnv "AWS_ACCOUNT_ID" }}:role/{{ requiredEnv "CLUSTER_NAME" }}-cluster-autoscaler
+        extraArgs:
+          expander: least-waste
+        nodeSelector:
+          zeet.co/dedicated: system
+  - name: traefik
+    namespace: traefik
+    chart: traefik/traefik
+    version: v25.0.0
+    values:
+      - deployment:
+          replicas: 2
+          terminationGracePeriodSeconds: 400
+        service:
+          annotations:
+            service.beta.kubernetes.io/aws-load-balancer-type: external
+            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+            service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+            service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+            service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+            service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=false
+            external-dns.alpha.kubernetes.io/hostname: {{ requiredEnv "CLUSTER_DOMAIN" }}.,*.{{ requiredEnv "CLUSTER_DOMAIN" }}.
+          spec:
+            externalTrafficPolicy: Local
+        additionalArguments:
+          - --entryPoints.web.proxyProtocol.trustedIPs=10.0.0.0/16
+          - --entryPoints.websecure.proxyProtocol.trustedIPs=10.0.0.0/16
+          - --entryPoints.web.transport.lifeCycle.requestAcceptGraceTimeout=360
+          - --entryPoints.websecure.transport.lifeCycle.requestAcceptGraceTimeout=360
+          - --entrypoints.metrics.transport.lifecycle.requestAcceptGraceTimeout=360
+          - --entrypoints.traefik.transport.lifecycle.requestAcceptGraceTimeout=360
+          - --ping.terminatingStatusCode=204
+        ingressClass:
+          enabled: true
+        logs:
+          general:
+            level: FATAL
+          access:
+            enabled: true
+        resources:
+          limits:
+            cpu: 0.3
+            memory: 0.8Gi
+          requests:
+            cpu: 0.3
+            memory: 0.8Gi
+        autoscaling:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 10
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 70
+          - type: Resource
+            resource:
+              name: memory
+              target:
+                type: Utilization
+                averageUtilization: 70
+  - name: cert-manager
+    namespace: cert-manager
+    chart: jetstack/cert-manager
+    version: v1.5.4
+    values:
+      - installCRDs: true
+        serviceAccount:
+          name: cert-manager
+          annotations:
+            eks.amazonaws.com/role-arn: arn:aws:iam::{{ requiredEnv "AWS_ACCOUNT_ID" }}:role/{{ requiredEnv "CLUSTER_NAME" }}-cert-manager
+        securityContext:
+          enabled: true
+          fsGroup: 1001 # required for service account token
+  - name: external-dns
+    namespace: kube-system
+    chart: bitnami/external-dns
+    values:
+    - serviceAccount:
+        name: external-dns
+        annotations:
+          eks.amazonaws.com/role-arn: arn:aws:iam::{{ requiredEnv "AWS_ACCOUNT_ID" }}:role/{{ requiredEnv "CLUSTER_NAME" }}-external-dns
+      sources:
+        - service
+      publishHostIP: true
+      txtOwnerId: external-dns
+      domainFilters:
+        - {{ requiredEnv "CLUSTER_DOMAIN" }}
+      zoneIdFilters:
+        - {{ requiredEnv "DNS_ZONE" }}
+      provider: aws
+      aws:
+        region: {{ requiredEnv "AWS_REGION" }}
+  - name: metrics-server
+    namespace: kube-system
+    chart: bitnami/metrics-server
+    values:
+    - tolerations:
+        - effect: NoSchedule
+          operator: "Equal"
+          key: zeet.co/dedicated
+          value: system
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          cpu: 100m
+          memory: 200Mi
+      apiService:
+        create: true
+  - name: keda
+    namespace: keda
+    chart: kedacore/keda
+    version: 2.12.0
