@@ -1,0 +1,18 @@
+cloudWatch:
+  enabled: true
+  region: {{ requiredEnv "AWS_REGION" }}
+  logGroupName: /{{ requiredEnv "CLUSTER_NAME" }}/logs
+firehose:
+  enabled: false
+kinesis:
+  enabled: false
+elasticsearch:
+  enabled: false
+tolerations:
+  - effect: "NoSchedule"
+    operator: "Exists"
+priorityClassName: system-cluster-critical
+serviceAccount:
+  name: fluent-bit
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::{{ requiredEnv "AWS_ACCOUNT_ID" }}:role/{{ requiredEnv "CLUSTER_NAME" }}-fluent-bit

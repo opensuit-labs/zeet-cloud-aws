@@ -1,0 +1,15 @@
+repositories:
+  - name: eks
+    url: https://aws.github.io/eks-charts
+
+releases:
+  - name: aws-lb-controller
+    namespace: kube-system
+    chart: eks/aws-load-balancer-controller
+    version: 1.4.0
+    installed: {{ eq (env "INSTALLED" | default "true") "true" | toYaml }}
+    values:
+      - values.yaml.gotmpl
+      {{ if eq (env "USER_HELM_VALUES" | default "false") "true" }}
+      - values.user.yaml.gotmpl
+      {{ end }}

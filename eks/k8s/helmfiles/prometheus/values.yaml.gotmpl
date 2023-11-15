@@ -1,0 +1,35 @@
+server:
+  persistentVolume:
+    size: 10Gi
+  strategy:
+    type: Recreate
+  resources:
+    limits:
+      cpu: 0.2
+      memory: 1Gi
+    requests:
+      cpu: 0.2
+      memory: 1Gi
+  nodeSelector:
+    zeet.co/dedicated: system
+  ingress:
+    enabled: true
+    annotations:
+      traefik.ingress.kubernetes.io/router.tls: "true"
+      traefik.ingress.kubernetes.io/router.middlewares: "traefik-zeet-auth@kubernetescrd"
+    ingressClassName: traefik
+    hosts:
+      - zeet-prometheus.{{ requiredEnv "CLUSTER_DOMAIN" }}
+    tls:
+      - hosts:
+          - zeet-prometheus.{{ requiredEnv "CLUSTER_DOMAIN" }}
+nodeExporter:
+  tolerations:
+    - effect: "NoSchedule"
+      operator: "Exists"
+alertmanager:
+  strategy:
+    type: Recreate
+kube-state-metrics:
+  metricLabelsAllowlist:
+    - 'pods=[*]'

@@ -1,0 +1,19 @@
+clusterName: {{ requiredEnv "CLUSTER_NAME" }}
+replicaCount: 1
+serviceAccount:
+  create: true
+  name: aws-lb-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::{{ requiredEnv "AWS_ACCOUNT_ID" }}:role/{{ requiredEnv "CLUSTER_NAME" }}-aws-lb-controller
+createIngressClassResource: false
+ingressClassParams:
+  create: false
+nodeSelector:
+  zeet.co/dedicated: system
+resources:
+  requests:
+    cpu: 60m
+    memory: 120Mi
+  limits:
+    cpu: 60m
+    memory: 120Mi
