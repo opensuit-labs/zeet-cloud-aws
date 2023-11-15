@@ -15,7 +15,7 @@ The following environment variables are required:
 
 4. `CLUSTER_NAME`: The name of your EKS cluster
    - Example: `my-cluster`
-   - Description: The main domain name that your cluster will serve. Wildcard domains can also be used.
+   - Description: The unique identifier of your EKS cluster on AWS dashboard.
 
 5. `CLUSTER_DOMAIN`: The domain name for your Kubernetes cluster.
    - Example: `mycluster.example.com`
