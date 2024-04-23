@@ -26,11 +26,13 @@ data "aws_eks_cluster_auth" "cluster" {
 }
 
 resource "aws_eks_addon" "eks_addon_csi" {
+  count = var.enable_eks_csi_addon ? 1 : 0
+
   cluster_name             = data.aws_eks_cluster.cluster.name
   service_account_role_arn = module.iam_ebs-csi.this_iam_role_arn
   addon_name               = "aws-ebs-csi-driver"
 
-  resolve_conflicts = "PRESERVE"
+  resolve_conflicts = "OVERWRITE"
 }
 
 resource "aws_ecr_repository" "zeet" {

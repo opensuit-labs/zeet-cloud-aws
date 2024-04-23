@@ -31,3 +31,8 @@ variable "external_dns_namespace" {
   type    = string
   default = "kube-system"
 }
+
+variable "enable_eks_csi_addon" {
+  type    = bool
+  default = false
+}
