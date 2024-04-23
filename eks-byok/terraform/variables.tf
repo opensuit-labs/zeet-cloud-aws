@@ -7,27 +7,27 @@ variable "aws_account_id" {
 }
 
 variable "cluster_id" {
-  type    = string
+  type = string
 }
 
 variable "cluster_name" {
-  type    = string
+  type = string
 }
 
 variable "cluster_domain" {
-  type    = string
+  type = string
 }
 
 variable "user_id" {
-  type    = string
+  type = string
 }
 
 variable "cert_manager_namespace" {
-  type = string
+  type    = string
   default = "cert-manager"
 }
 
 variable "external_dns_namespace" {
-  type = string
+  type    = string
   default = "kube-system"
 }

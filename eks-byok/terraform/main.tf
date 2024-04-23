@@ -29,6 +29,9 @@ resource "aws_eks_addon" "eks_addon_csi" {
   cluster_name             = data.aws_eks_cluster.cluster.name
   service_account_role_arn = module.iam_ebs-csi.this_iam_role_arn
   addon_name               = "aws-ebs-csi-driver"
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
 }
 
 resource "aws_ecr_repository" "zeet" {
