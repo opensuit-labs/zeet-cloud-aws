@@ -255,6 +255,21 @@ locals {
         }
       ]
     }
+    m5zn-3xlarge-dedi : {
+      instance_types = ["m5zn.3xlarge"]
+
+	  labels = {
+		"zeet.co/dedicated" = "dedicated"
+	  }
+
+	  taints = [
+		{
+		  key    = "zeet.co/dedicated"
+		  value  = "dedicated"
+		  effect = "NO_SCHEDULE"
+		}
+	  ]
+	}
     "c5-xlarge-guran-priv" : {
       instance_types      = ["c5.xlarge"]
       capacity_type       = "SPOT"
