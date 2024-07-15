@@ -372,6 +372,57 @@ locals {
           effect = "NO_SCHEDULE"
         }
       ]
+    }),
+    "g6-2xlarge-dedi" : merge({
+      key_name     = aws_key_pair.ssh.key_name
+      desired_size = 0
+      min_size     = 0
+      max_size     = 10
+
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = 50
+            volume_type           = "gp2"
+            delete_on_termination = true
+          }
+        }
+      }
+
+      subnet_ids             = [sort(module.vpc.public_subnets)[0]]
+      vpc_security_group_ids = [aws_security_group.worker_public.id]
+    }, {
+      name          = "g6-2xlarge-dedicated"
+      instance_type = "g6.2xlarge"
+      ami_id        = data.aws_ami.eks_gpu.id
+
+      subnet_ids = [sort(module.vpc.public_subnets)[0]]
+
+      bootstrap_extra_args = "--kubelet-extra-args '${
+        join(" ", [
+          "--node-labels=zeet.co/dedicated=dedicated,zeet.co/gpu=\"true\"",
+          "--register-with-taints nvidia.com/gpu=present:NoSchedule",
+        ])
+      }'"
+
+      // not used just for reference
+      labels = {
+        "zeet.co/dedicated" = "dedicated"
+        "zeet.co/gpu"       = "true"
+      }
+      taints = [
+        {
+          key    = "zeet.co/dedicated"
+          value  = "dedicated"
+          effect = "NO_SCHEDULE"
+        },
+        {
+          key    = "zeet.co/gpu"
+          value  = "true"
+          effect = "NO_SCHEDULE"
+        }
+      ]
     })
   } : {}
 }
